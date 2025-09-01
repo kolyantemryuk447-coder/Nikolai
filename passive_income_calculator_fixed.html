@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Калькулятор пассивного дохода — сложный процент</title>
+<style>
+  :root { --bg:#0f1220; --card:#171a2b; --text:#eaeaf2; --muted:#a9adc1; --accent:#6ee7b7; --accent2:#60a5fa; }
+  *{box-sizing:border-box}
+  body{margin:0;background:linear-gradient(180deg,#0d0f1a, #121426);color:var(--text);font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial}
+  header{padding:24px 20px 8px;text-align:center}
+  h1{margin:0 0 6px;font-size:clamp(20px,4vw,28px)}
+  p.lead{margin:0;color:var(--muted)}
+  main{max-width:1100px;margin:18px auto;padding:0 16px 40px;display:grid;gap:16px;grid-template-columns:1.1fr 1fr}
+  @media (max-width:1000px){main{grid-template-columns:1fr}}
+  .card{background:var(--card);border:1px solid rgba(255,255,255,.06);border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+  .panel{padding:16px}
+  .panel h2{margin:0 0 10px;font-size:18px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  @media (max-width:640px){.grid{grid-template-columns:1fr}}
+  label{display:block;font-size:13px;color:var(--muted);margin:4px 0}
+  input,select,button{width:100%;padding:10px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:#0f1220;color:var(--text);outline:none}
+  input:focus,select:focus{border-color:var(--accent2)}
+  button{cursor:pointer;border-color:transparent;background:linear-gradient(180deg,var(--accent2),#2563eb);font-weight:600}
+  button.secondary{background:transparent;border-color:rgba(255,255,255,.18)}
+  .row{display:flex;gap:10px;align-items:center}
+  .row > *{flex:1}
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+  @media (max-width:800px){.stats{grid-template-columns:repeat(2,1fr)}}
+  .stat{padding:12px;border-radius:12px;background:#10142a;border:1px solid rgba(255,255,255,.06);text-align:center}
+  .stat b{display:block;font-size:18px;margin-top:2px;color:var(--text)}
+  .muted{color:var(--muted)}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.08);text-align:right}
+  th:first-child,td:first-child{text-align:left}
+  .table-wrap{max-height:380px;overflow:auto;border-radius:12px;border:1px solid rgba(255,255,255,.06)}
+  footer{padding:16px;text-align:center;color:var(--muted);font-size:12px}
+  .note{font-size:12px;color:var(--muted)}
+  .switch{display:flex;gap:8px;margin-bottom:8px}
+  .pill{flex:1;padding:8px;border-radius:999px;text-align:center;border:1px solid rgba(255,255,255,.12);cursor:pointer}
+  .pill.active{border-color:var(--accent);box-shadow:0 0 0 2px rgba(110,231,183,.2) inset}
+  canvas{width:100%;height:280px;display:block}
+</style>
+</head>
+<body>
+  <header>
+    <h1>Калькулятор пассивного дохода</h1>
+    <p class="lead">Сложный процент, налоги, инфляция, пополнения. Режимы: накопление и «сколько капитала нужно для цели».</p>
+  </header>
+  <main>
+    <section class="card panel">
+      <h2>Параметры</h2>
+      <div class="switch" id="modeSwitch">
+        <div class="pill active" data-mode="accumulate">Накопление</div>
+        <div class="pill" data-mode="target">Целевой доход</div>
+      </div>
+
+      <div class="grid">
+        <div>
+          <label>Начальный капитал (₽)</label>
+          <input id="start" type="number" min="0" step="1000" value="100000">
+        </div>
+        <div>
+          <label>Ежемесячное пополнение (₽)</label>
+          <input id="monthly" type="number" min="0" step="1000" value="10000">
+        </div>
+        <div>
+          <label>Годовая доходность, % (номинальная)</label>
+          <input id="rate" type="number" min="-50" max="200" step="0.1" value="12">
+        </div>
+        <div>
+          <label>Капитализация</label>
+          <select id="freq">
+            <option value="12" selected>Ежемесячно</option>
+            <option value="4">Ежеквартально</option>
+            <option value="1">Ежегодно</option>
+            <option value="365">Ежедневно</option>
+          </select>
+        </div>
+        <div>
+          <label>Срок, лет</label>
+          <input id="years" type="number" min="0" max="60" step="1" value="15">
+        </div>
+        <div>
+          <label>Инфляция, % в год</label>
+          <input id="infl" type="number" min="0" max="100" step="0.1" value="6">
+        </div>
+        <div>
+          <label>Налог на доход, %</label>
+          <input id="tax" type="number" min="0" max="99" step="0.1" value="13">
+        </div>
+        <div>
+          <label>Доля дохода как «пассивный» (дивиденды/купоны), %</label>
+          <input id="yieldPct" type="number" min="0" max="100" step="0.1" value="40">
+        </div>
+        <div class="target-only" style="display:none">
+          <label>Желаемый пассивный доход (в ценах сегодня), ₽/мес</label>
+          <input id="targetIncome" type="number" min="0" step="1000" value="100000">
+        </div>
+        <div class="target-only" style="display:none">
+          <label>Правило изъятия, % годовых (safe withdrawal)</label>
+          <input id="swr" type="number" min="1" max="10" step="0.1" value="4">
+        </div>
+      </div>
+
+      <div class="row" style="margin-top:12px">
+        <button id="calcBtn">Рассчитать</button>
+        <button id="exportBtn" class="secondary">Экспорт в CSV</button>
+      </div>
+      <p class="note">Примечание: налог применяется к годовой прибыли; инфляция используется для пересчёта в ценах «сегодня». Модель упрощённая и не является инвестиционной рекомендацией.</p>
+    </section>
+
+    <section class="card panel">
+      <h2>Итоги</h2>
+      <div class="stats" id="stats">
+        <div class="stat"><span class="muted">Итоговый капитал</span><b id="finalSum">—</b></div>
+        <div class="stat"><span class="muted">Всего внесено</span><b id="totalContrib">—</b></div>
+        <div class="stat"><span class="muted">Чистая прибыль</span><b id="netProfit">—</b></div>
+        <div class="stat"><span class="muted">Пассивный доход/мес</span><b id="passiveMonthly">—</b></div>
+      </div>
+      <div style="margin:14px 0 8px" class="muted">Динамика капитала (реальные цены)</div>
+      <canvas id="chart" width="800" height="280" aria-label="График капитала"></canvas>
+      <div class="table-wrap" style="margin-top:10px">
+        <table id="table">
+          <thead>
+            <tr>
+              <th>Год</th>
+              <th>Капитал, ₽ (ном.)</th>
+              <th>Капитал, ₽ (в ценах сегодня)</th>
+              <th>Внесено всего, ₽</th>
+              <th>Пассивный доход/год, ₽ (после налога)</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+  <footer>© Калькулятор от вас — и для вас. Версия 1.0</footer>
+
+<script>
+// ... (весь код симуляции и функций recalc() остаётся таким же как в прошлой версии)
+
+// Здесь просто меняем кнопку на обработчик с try/catch:
+document.getElementById('calcBtn').addEventListener('click', () => {
+  try {
+    recalc();
+  } catch (e) {
+    alert("Ошибка в расчёте: " + e.message);
+    console.error(e);
+  }
+});
+
+// ... остальной код (export, switch режимов, initial recalc)
+</script>
+</body>
+</html>
