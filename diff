@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Мой Доход</title>
+
+    <!-- Чтобы на iPhone можно было добавить как приложение -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Мой Доход">
+
+    <!-- Иконка для ярлыка -->
+    <link rel="apple-touch-icon" href="https://img.icons8.com/color/180/money-bag.png">
+
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; background: #f5f5f5; }
+        h1 { text-align: center; }
+        .container { max-width: 400px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        label { display: block; margin-top: 15px; }
+        input { width: 100%; padding: 8px; margin-top: 5px; border: 1px solid #ccc; border-radius: 5px; }
+        button { margin-top: 20px; width: 100%; padding: 10px; background: #007bff; color: white; border: none; border-radius: 5px; font-size: 16px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .result { margin-top: 20px; font-weight: bold; text-align: center; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Калькулятор дохода</h1>
+        <label>Начальная сумма (₽):
+            <input type="number" id="principal" placeholder="100000">
+        </label>
+        <label>Годовая ставка (%):
+            <input type="number" id="rate" placeholder="10">
+        </label>
+        <label>Срок (лет):
+            <input type="number" id="years" placeholder="5">
+        </label>
+        <label>Ежемесячное пополнение (₽):
+            <input type="number" id="monthly" placeholder="10000">
+        </label>
+        <button onclick="calculate()">Рассчитать</button>
+        <div class="result" id="result"></div>
+    </div>
+
+    <script>
+        function calculate() {
+            let principal = parseFloat(document.getElementById("principal").value) || 0;
+            let rate = parseFloat(document.getElementById("rate").value) / 100 || 0;
+            let years = parseFloat(document.getElementById("years").value) || 0;
+            let monthly = parseFloat(document.getElementById("monthly").value) || 0;
+
+            let months = years * 12;
+            let monthlyRate = rate / 12;
+            let futureValue = principal * Math.pow(1 + monthlyRate, months);
+
+            for (let i = 1; i <= months; i++) {
+                futureValue += monthly * Math.pow(1 + monthlyRate, months - i);
+            }
+
+            document.getElementById("result").innerText =
+                "Через " + years + " лет сумма составит: " + futureValue.toFixed(2) + " ₽";
+        }
+    </script>
+</body>
+</html>
